@@ -10,12 +10,13 @@ app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Supabase Configuration
-SUPABASE_URL = os.getenv('SUPABASE_URL', 'your_supabase_url')
-SUPABASE_KEY = os.getenv('SUPABASE_KEY', 'your_supabase_key')
+SUPABASE_URL = os.getenv('SUPABASE_URL')
+SUPABASE_KEY = os.getenv('SUPABASE_KEY')
 
-# Initialize Supabase Client
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise Exception("Missing SUPABASE_URL or SUPABASE_KEY in environment variables")
+
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
 # ===== HELPER FUNCTIONS =====
 
 def validate_youtube_url(url):
