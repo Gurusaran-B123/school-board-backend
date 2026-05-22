@@ -7,7 +7,13 @@ from functools import wraps
 
 # Initialize Flask App
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+CORS(app, resources={
+    r"/api/*": {
+        "origins": [
+            "https://your-project.pages.dev"
+        ]
+    }
+})
 
 # Supabase Configuration
 SUPABASE_URL = os.getenv('SUPABASE_URL', 'your_supabase_url')
