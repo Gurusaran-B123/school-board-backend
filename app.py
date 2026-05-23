@@ -10,7 +10,7 @@ app = Flask(__name__)
 CORS(app, resources={
     r"/api/*": {
         "origins": [
-            "https://school-board-frontend-jkcrhelyk-gurusaran-b123s-projects.vercel.app"
+            "https://school-board-frontend-snowy.vercel.app/"
         ]
     }
 })
