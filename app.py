@@ -50,14 +50,8 @@ def login():
         if role not in ['student', 'parent']:
             return jsonify({'message': 'Invalid role'}), 400
 
-        table = 'students' if role == 'student' else 'parents'
-
-        # ✅ FIX: check BOTH name + key
-        response = supabase.table(table)\
-            .select('*')\
-            .eq('name', name)\
-            .eq('key', key)\
-            .execute()
+        table = 'students'
+        response = supabase.table(table).select('*').eq('key', key).eq('name', name).execute()
 
         print("SUPABASE RESPONSE:", response.data)
 
@@ -91,10 +85,10 @@ def create_admin():
         if not name or not key:
             return jsonify({'message': 'Missing fields'}), 400
 
-        response = supabase.table('parents').insert({
-            'name': name,
-            'key': key
-        }).execute()
+        response = supabase.table('students').insert({
+    'name': name,
+    'key': key
+}).execute()
 
         return jsonify({
             'message': 'Admin created successfully',
