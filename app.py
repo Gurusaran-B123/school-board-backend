@@ -10,10 +10,10 @@ app = Flask(__name__)
 CORS(app, resources={
     r"/api/*": {
         "origins": [
-            "https://school-board-frontend-snowy.vercel.app/"
+            "https://school-board-frontend-snowy.vercel.app"
         ]
     }
-})
+}, supports_credentials=True)
 
 # Supabase Configuration
 SUPABASE_URL = os.getenv('SUPABASE_URL')
@@ -64,7 +64,7 @@ def login():
         table = 'students' if role == 'student' else 'parents'
         
         # Query database - Check name AND key
-        response = supabase.table(table).select('*').eq('name', name).eq('key', key).execute()
+        response = supabase.table(table).select('*').eq('key', key).execute()
         
         if not response.data:
             return jsonify({'message': 'Invalid name or key'}), 401
@@ -84,6 +84,31 @@ def login():
     
     except Exception as e:
         return jsonify({'message': f'Server error: {str(e)}'}), 500
+
+
+@app.route('/api/admin/create', methods=['POST'])
+def create_admin():
+    try:
+        data = request.get_json()
+
+        name = data.get('name')
+        key = data.get('key')
+
+        if not name or not key:
+            return jsonify({'message': 'Missing fields'}), 400
+
+        response = supabase.table('parents').insert({
+            'name': name,
+            'key': key
+        }).execute()
+
+        return jsonify({
+            'message': 'Admin created successfully',
+            'admin': response.data[0]
+        }), 201
+
+    except Exception as e:
+        return jsonify({'message': str(e)}), 500
 
 # ===== CONTENT ROUTES =====
 
