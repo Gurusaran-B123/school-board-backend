@@ -35,43 +35,37 @@ def validate_youtube_url(url):
 
 @app.route('/api/login', methods=['POST'])
 def login():
-    """Login endpoint for students and parents
-    
-    CHANGED: Now uses Name + Key instead of Name + DOB
-    
-    Expected JSON body:
-    {
-        "name": "John",
-        "key": "123",
-        "role": "student" or "parent"
-    }
-    """
     try:
         data = request.get_json()
-        
-        # Validate input
+
+        print("LOGIN DATA:", data)
+
         if not data.get('name') or not data.get('key') or not data.get('role'):
             return jsonify({'message': 'Missing required fields'}), 400
-        
+
         name = data['name'].strip()
         key = data['key'].strip()
         role = data['role']
-        
+
         if role not in ['student', 'parent']:
             return jsonify({'message': 'Invalid role'}), 400
-        
-        # Determine table based on role
+
         table = 'students' if role == 'student' else 'parents'
-        
-        # Query database - Check name AND key
-        response = supabase.table(table).select('*').eq('key', key).execute()
-        
+
+        # ✅ FIX: check BOTH name + key
+        response = supabase.table(table)\
+            .select('*')\
+            .eq('name', name)\
+            .eq('key', key)\
+            .execute()
+
+        print("SUPABASE RESPONSE:", response.data)
+
         if not response.data:
             return jsonify({'message': 'Invalid name or key'}), 401
-        
+
         user = response.data[0]
-        
-        # Return user info
+
         return jsonify({
             'message': 'Login successful',
             'user': {
@@ -81,10 +75,10 @@ def login():
                 'role': role
             }
         }), 200
-    
-    except Exception as e:
-        return jsonify({'message': f'Server error: {str(e)}'}), 500
 
+    except Exception as e:
+        print("LOGIN ERROR:", str(e))
+        return jsonify({'message': str(e)}), 500
 
 @app.route('/api/admin/create', methods=['POST'])
 def create_admin():
