@@ -31,26 +31,18 @@ def validate_youtube_url(url):
         return True
     return 'youtube.com' in url or 'youtu.be' in url
 
-def format_date(date_string):
-    """Format date string to YYYY-MM-DD"""
-    try:
-        return datetime.strptime(date_string, '%Y-%m-%d').strftime('%Y-%m-%d')
-    except:
-        return None
-
 # ===== AUTHENTICATION ROUTES =====
 
 @app.route('/api/login', methods=['POST'])
 def login():
     """Login endpoint for students and parents
     
-    NO CHANGES NEEDED - This endpoint remains the same
-    Works with both HTML separation and single HTML versions
+    CHANGED: Now uses Name + Key instead of Name + DOB
     
     Expected JSON body:
     {
-        "name": "John Doe",
-        "dob": "2010-05-15",
+        "name": "John",
+        "key": "123",
         "role": "student" or "parent"
     }
     """
@@ -58,15 +50,12 @@ def login():
         data = request.get_json()
         
         # Validate input
-        if not data.get('name') or not data.get('dob') or not data.get('role'):
+        if not data.get('name') or not data.get('key') or not data.get('role'):
             return jsonify({'message': 'Missing required fields'}), 400
         
         name = data['name'].strip()
-        dob = format_date(data['dob'])
+        key = data['key'].strip()
         role = data['role']
-        
-        if not dob:
-            return jsonify({'message': 'Invalid date format'}), 400
         
         if role not in ['student', 'parent']:
             return jsonify({'message': 'Invalid role'}), 400
@@ -74,11 +63,11 @@ def login():
         # Determine table based on role
         table = 'students' if role == 'student' else 'parents'
         
-        # Query database
-        response = supabase.table(table).select('*').eq('name', name).eq('dob', dob).execute()
+        # Query database - Check name AND key
+        response = supabase.table(table).select('*').eq('name', name).eq('key', key).execute()
         
         if not response.data:
-            return jsonify({'message': f'User not found. Please check name and date of birth.'}), 401
+            return jsonify({'message': 'Invalid name or key'}), 401
         
         user = response.data[0]
         
@@ -88,7 +77,7 @@ def login():
             'user': {
                 'id': user['id'],
                 'name': user['name'],
-                'dob': user['dob'],
+                'key': user['key'],
                 'role': role
             }
         }), 200
@@ -101,9 +90,6 @@ def login():
 @app.route('/api/content', methods=['POST'])
 def create_content():
     """Create new content (parents only)
-    
-    NO CHANGES NEEDED - This endpoint remains the same
-    Works with separated HTML pages
     
     Expected JSON body:
     {
@@ -128,18 +114,20 @@ def create_content():
         if youtube_link and not validate_youtube_url(youtube_link):
             return jsonify({'message': 'Invalid YouTube URL'}), 400
         
-        # Get parent name
-        parent_response = supabase.table('parents').select('name').eq('id', data['parent_id']).execute()
+        # Get parent name and key
+        parent_response = supabase.table('parents').select('name, key').eq('id', data['parent_id']).execute()
         
         if not parent_response.data:
             return jsonify({'message': 'Parent not found'}), 404
         
         parent_name = parent_response.data[0]['name']
+        parent_key = parent_response.data[0]['key']
         
-        # Insert content
+        # Insert content with parent's key
         content_data = {
             'parent_id': data['parent_id'],
             'parent_name': parent_name,
+            'key': parent_key,
             'text': text,
             'youtube_link': youtube_link,
             'created_at': datetime.utcnow().isoformat()
@@ -159,7 +147,6 @@ def create_content():
 def get_content():
     """Get all content
     
-    NO CHANGES NEEDED - This endpoint remains the same
     Returns all content in reverse chronological order
     """
     try:
@@ -176,9 +163,6 @@ def get_content():
 @app.route('/api/content/<int:content_id>', methods=['DELETE'])
 def delete_content(content_id):
     """Delete content (parents only)
-    
-    NO CHANGES NEEDED - This endpoint remains the same
-    Works with separated HTML pages
     """
     try:
         # Delete content
@@ -196,8 +180,6 @@ def delete_content(content_id):
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint
-    
-    NO CHANGES NEEDED - This endpoint remains the same
     """
     return jsonify({'status': 'ok', 'message': 'Server is running'}), 200
 
