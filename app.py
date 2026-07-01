@@ -38,13 +38,22 @@ def login():
             return jsonify({'message': 'Missing name, key, or role'}), 400
 
         if role == 'admin':
-            # Check if Admin exists with this name AND key
-            response = supabase.table('admins').select('*').eq('name', name).eq('key', key).execute()
-            
-            if not response.data:
-                return jsonify({'message': 'Admin login failed. Name or Key is incorrect.'}), 401
-            
-            user = response.data[0]
+    # Check if this key is already used by a DIFFERENT admin name
+    key_check = supabase.table('admins').select('name').eq('key', key).execute()
+    
+    if key_check.data and key_check.data[0]['name'] != name:
+        return jsonify({'message': 'This key is already registered to another admin.'}), 401
+
+    # Upsert: creates new admin if key doesn't exist, or matches existing one
+    admin_response = supabase.table('admins').upsert({
+        'name': name,
+        'key': key
+    }, on_conflict='key').execute()
+
+    if not admin_response.data:
+        return jsonify({'message': 'Failed to create/find admin'}), 500
+
+    user = admin_response.data[0]
 
         elif role == 'student':
             # 1. First, check if the Key provided belongs to ANY valid Admin
