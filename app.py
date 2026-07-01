@@ -2,7 +2,6 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from supabase import create_client, Client
 import os
-import socket
 
 # Initialize Flask App
 app = Flask(__name__)
@@ -28,20 +27,6 @@ if not SUPABASE_URL or not SUPABASE_KEY:
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ===== AUTHENTICATION ROUTE =====
-
-
-@app.route('/api/debug-dns', methods=['GET'])
-def debug_dns():
-    try:
-        ip = socket.gethostbyname('azscefxcoebhzfcsyxnv.supabase.co')
-        return jsonify({'status': 'success', 'resolved_ip': ip}), 200
-    except Exception as e:
-        return jsonify({'status': 'failed', 'error': str(e)}), 500
-
-
-
-
-
 @app.route('/api/login', methods=['POST'])
 def login():
     try:
