@@ -17,9 +17,8 @@ CORS(app, resources={
 
 # Supabase Configuration
 SUPABASE_URL = os.getenv('SUPABASE_URL')
-print(f"DEBUG URL: {repr(SUPABASE_URL)}")
 SUPABASE_KEY = os.getenv('SUPABASE_KEY')
-print(f"DEBUG KEY LEN: {len(SUPABASE_KEY) if SUPABASE_KEY else 0}")
+
 
 if not SUPABASE_URL or not SUPABASE_KEY:
     raise Exception("Missing SUPABASE_URL or SUPABASE_KEY in Render environment variables")
