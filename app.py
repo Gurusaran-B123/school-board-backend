@@ -32,37 +32,43 @@ def login():
         data = request.get_json()
         name = data.get('name', '').strip()
         key = data.get('key', '').strip()
-        role = data.get('role', '').lower() # 'admin' or 'student'
+        role = data.get('role', '').lower()  # 'admin' or 'student'
 
         if not name or not key or not role:
             return jsonify({'message': 'Missing name, key, or role'}), 400
 
         if role == 'admin':
             key_check = supabase.table('admins').select('name').eq('key', key).execute()
-        if key_check.data and key_check.data[0]['name'] != name:
-            return jsonify({'message': 'This key is already registered to another admin.'}), 401
+
+            if key_check.data and key_check.data[0]['name'] != name:
+                return jsonify({'message': 'This key is already registered to another admin.'}), 401
+
             admin_response = supabase.table('admins').upsert({
                 'name': name,
                 'key': key
             }, on_conflict='key').execute()
+
             if not admin_response.data:
                 return jsonify({'message': 'Failed to create/find admin'}), 500
-                user = admin_response.data[0]
+
+            user = admin_response.data[0]
 
         elif role == 'student':
             # 1. First, check if the Key provided belongs to ANY valid Admin
             admin_check = supabase.table('admins').select('name').eq('key', key).execute()
-            
+
             if not admin_check.data:
                 return jsonify({'message': 'Invalid Key. No Admin found with this code.'}), 401
-            
+
             # 2. Key is valid. Now, check if student exists or create them (pairing)
-            # Use upsert to prevent duplicate students for the same key
             student_response = supabase.table('students').upsert({
                 'name': name,
                 'key': key
             }, on_conflict='name,key').execute()
-            
+
+            if not student_response.data:
+                return jsonify({'message': 'Failed to create/find student'}), 500
+
             user = student_response.data[0]
 
         else:
@@ -81,7 +87,6 @@ def login():
     except Exception as e:
         print(f"Login Error: {str(e)}")
         return jsonify({'message': 'Internal Server Error'}), 500
-
 # ===== CONTENT ROUTES (THE PAIRING LOGIC) =====
 
 @app.route('/api/content', methods=['POST'])
