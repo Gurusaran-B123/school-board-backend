@@ -2,6 +2,8 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from supabase import create_client, Client
 import os
+import random
+import string
 
 # Initialize Flask App
 app = Flask(__name__)
@@ -25,7 +27,47 @@ if not SUPABASE_URL or not SUPABASE_KEY:
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# ===== AUTHENTICATION ROUTE =====
+# ===== AUTO KEY GENERATOR =====
+def generate_key(length=8):
+    chars = string.ascii_lowercase + string.digits
+    return ''.join(random.choice(chars) for _ in range(length))
+
+# ===== ADMIN SIGNUP ROUTE (NEW) =====
+@app.route('/api/admin/signup', methods=['POST'])
+def admin_signup():
+    try:
+        data = request.get_json()
+        name = data.get('name', '').strip()
+
+        if not name:
+            return jsonify({'message': 'Name is required'}), 400
+
+        # Check if this name already has an admin account
+        existing = supabase.table('admins').select('name').eq('name', name).execute()
+        if existing.data:
+            return jsonify({'message': 'This name is already registered. Please sign in instead.'}), 409
+
+        new_key = generate_key()
+
+        response = supabase.table('admins').insert({
+            'name': name,
+            'key': new_key
+        }).execute()
+
+        if not response.data:
+            return jsonify({'message': 'Failed to create admin account'}), 500
+
+        return jsonify({
+            'message': 'Admin account created successfully',
+            'user': response.data[0],
+            'key': new_key
+        }), 201
+
+    except Exception as e:
+        print(f"Signup Error: {str(e)}")
+        return jsonify({'message': 'Internal Server Error'}), 500
+
+# ===== AUTHENTICATION ROUTE (UNCHANGED) =====
 @app.route('/api/login', methods=['POST'])
 def login():
     try:
